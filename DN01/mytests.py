@@ -20,3 +20,5 @@ class SoftmaxTest():
 derp = SoftmaxTest()
 derp.setUp()
 print(derp.sm.cost(derp.theta, derp.X1, derp.y))
+print(derp.sm.grad(derp.theta, derp.X1, derp.y))
+print(derp.sm.approx_grad(derp.theta, derp.X1, derp.y))

@@ -22,7 +22,10 @@ class SoftmaxLearner(Learner):
         super().__init__(preprocessors=preprocessors)
 
     def mysigma(self, z):
-        return np.exp(z) / np.sum(np.exp(z))
+        """
+        My softmax function. Always check that you provide correctly oriented data.
+        """
+        return np.exp(z) / np.sum(np.exp(z),axis=1)[:, None]
 
     def cost(self, theta, X, y):
         """
@@ -52,12 +55,9 @@ class SoftmaxLearner(Learner):
             np.ndarray: Gradients wrt. all model's parameters of shape
                 [n_classes * n_features]
         """
-        #######################################################################
-        # TODO: implement this function
-        #######################################################################
         theta = theta.reshape((-1, X.shape[1]))
         indicator = np.identity(theta.shape[0])[y.astype(int)]
-        return -(X.T.dot((indicator - self.mysigma(X.dot(theta.T))))).flatten()
+        return -(X.T.dot((indicator - self.mysigma(X.dot(theta.T))))).T.flatten()
 
     def approx_grad(self, theta, X, y, eps=1e-5):
         """
@@ -71,10 +71,13 @@ class SoftmaxLearner(Learner):
             np.ndarray: Gradients wrt. all model's parameters of shape
                 [n_classes * n_features]
         """
-        #######################################################################
-        # TODO: implement this function
-        #######################################################################
-        pass
+        result = []
+        for i in range(len(theta)):
+            crr = np.zeros(len(theta))
+            crr[i] = 1
+            result.append((self.cost(theta + (crr * eps),X,y) - self.cost(theta - (crr * eps),X,y)) / (2 * eps))
+
+        return np.array(result)
 
     def fit(self, X, y, W=None):
         """
