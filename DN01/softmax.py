@@ -89,10 +89,11 @@ class SoftmaxLearner(Learner):
         Returns:
             SoftmaxModel: Orange's classification model
         """
-        #######################################################################
-        # TODO: implement this function
-        #######################################################################
-        pass
+        num_classes = len(np.unique(y)) # predpostavljamo da so vsi razredi prisotni
+        X = np.column_stack((np.ones(X.shape[0]), X))
+        theta = np.ones(num_classes * X.shape[1]) * 1e-9;
+        result = fmin_l_bfgs_b(self.cost, theta, self.grad, args=(X,y))[0]
+        return SoftmaxModel(result.reshape((-1, X.shape[1])));
 
 
 class SoftmaxModel(Model):
