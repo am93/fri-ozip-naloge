@@ -100,6 +100,12 @@ class SoftmaxModel(Model):
     def __init__(self, theta):
         self.theta = theta
 
+    def mysigma(self, z):
+        """
+        My softmax function. Always check that you provide correctly oriented data.
+        """
+        return np.exp(z) / np.sum(np.exp(z),axis=1)[:, None]
+
     def predict(self, X):
         """
         Args:
@@ -108,10 +114,8 @@ class SoftmaxModel(Model):
         Returns:
             np.ndarray: Predictions of shape [n_examples, n_classes]
         """
-        #######################################################################
-        # TODO: implement this function
-        #######################################################################
-        pass
+        X = np.column_stack((np.ones(X.shape[0]), X))
+        return self.mysigma(X.dot(self.theta.T))
 
 
 class SoftmaxLearner_p(SoftmaxLearner):
@@ -129,9 +133,8 @@ class SoftmaxLearner_p(SoftmaxLearner):
         Returns:
             float: The value of cost function evaluated with given parameters.
         """
-        #######################################################################
-        # TODO: implement this function
-        #######################################################################
+        # samo dodam vrstico nicel na zacetek (to je prva vrstica, ki se je ne ucimo)
+        theta = np.concatenate((np.zeros(X.shape[1]), theta))
         return super().cost(theta, X, y)
 
     def grad(self, theta, X, y):
@@ -145,10 +148,10 @@ class SoftmaxLearner_p(SoftmaxLearner):
             np.ndarray: Gradients wrt. all model's parameters of shape
                 [(n_classes - 1) * n_features]
         """
-        #######################################################################
-        # TODO: implement this function
-        #######################################################################
-        return super().grad(theta, X, y)
+        # samo dodam vrstico nicel na zacetek (to je prva vrstica, ki se je ne ucimo)
+        theta = np.concatenate((np.zeros(X.shape[1]), theta))
+        # vrniti moram gradient samo za tiste thete, ki sem jih dobil - brez prve vrstice
+        return super().grad(theta, X, y)[X.shape[1]:]
 
     def fit(self, X, y, W=None):
         """
@@ -160,10 +163,12 @@ class SoftmaxLearner_p(SoftmaxLearner):
         Returns:
             SoftmaxModel: Orange's classification model
         """
-        #######################################################################
-        # TODO: implement this function
-        #######################################################################
-        return super().fit(X, y, W)
+        num_classes = len(np.unique(y)) - 1  # zmanjsamo stevilo razredov za 1
+        X = np.column_stack((np.ones(X.shape[0]), X))
+        theta = np.ones(num_classes * X.shape[1]) * 1e-9;
+        result = fmin_l_bfgs_b(self.cost, theta, self.grad, args=(X, y))[0]
+        result = np.concatenate((np.zeros(X.shape[1]), result)) # dodamo nicle za prvo vrstico
+        return SoftmaxModel(result.reshape((-1, X.shape[1])));
 
 
 if __name__ == '__main__':
