@@ -21,11 +21,14 @@ class SoftmaxLearner(Learner):
     def __init__(self, preprocessors=None):
         super().__init__(preprocessors=preprocessors)
 
-    def mysigma(self, z):
+    def mysigma(self, x):
         """
-        My softmax function. Always check that you provide correctly oriented data.
+        My softmax function. Always check that you provide correctly oriented data (ignore - solved with slicing).
+        I subtracted max value to prevent overflow at calculation of exponent - it may cause undeflow, but that is
+        not a problem.
         """
-        return np.exp(z) / np.sum(np.exp(z),axis=1)[:, None]
+        tmpx = np.exp(x - np.max(x, axis=1)[:, None])
+        return tmpx / np.sum(tmpx,axis=1)[:, None]
 
     def cost(self, theta, X, y):
         """
@@ -100,11 +103,14 @@ class SoftmaxModel(Model):
     def __init__(self, theta):
         self.theta = theta
 
-    def mysigma(self, z):
+    def mysigma(self, x):
         """
-        My softmax function. Always check that you provide correctly oriented data.
+        My softmax function. Always check that you provide correctly oriented data (ignore - solved with slicing).
+        I subtracted max value to prevent overflow at calculation of exponent - it may cause undeflow, but that is
+        not a problem.
         """
-        return np.exp(z) / np.sum(np.exp(z),axis=1)[:, None]
+        tmpx = np.exp(x - np.max(x, axis=1)[:, None])
+        return tmpx / np.sum(tmpx,axis=1)[:, None]
 
     def predict(self, X):
         """
