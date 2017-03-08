@@ -100,8 +100,8 @@ class SoftmaxTest(unittest.TestCase):
         theta = self.sm.fit(self.X, self.y).theta
         theta_p = self.sm_p.fit(self.X, self.y).theta
         self.assertGreater(np.sum(np.abs(theta - theta_p)), 0)
-        self.assertAlmostEqual(self.sm.cost(theta, self.X1, self.y),
-                               self.sm.cost(theta_p, self.X1, self.y), 4)
+        self.assertAlmostEqual(self.sm.cost(theta.flatten(), self.X1, self.y),
+                               self.sm.cost(theta_p.flatten(), self.X1, self.y), 4)
 
     def test_fit_p_check_0(self):
         model = self.sm_p.fit(self.X, self.y)
