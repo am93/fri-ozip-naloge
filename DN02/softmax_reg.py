@@ -73,7 +73,7 @@ def plot_mnist_weights(theta, filename='fig.pdf'):
 
     fig.tight_layout(w_pad=1)
     plt.savefig(filename)
-    plt.show()
+    #plt.show()
 
 
 if __name__ == '__main__':
@@ -93,15 +93,24 @@ if __name__ == '__main__':
     weights = sm(data).theta.flatten()
     print('Stronger regularization:', weights.dot(weights))
 
-    # Parameter optimization (try also on mnist data)
+    # Parameter optimization
     best_lambda = fit_params(SoftmaxLearner_reg, 'lambda_', [0.1, 1, 10, 100], data)
     print('Best lambda_:', best_lambda)
 
     # Plot weights for MNIST data
     data = Orange.data.Table('mnist-1k.tab')
+
+    # Parameter optimization (MNIST data)
+    best_lambda = fit_params(SoftmaxLearner_reg, 'lambda_', [0.1, 1, 10, 100], data)
+    print('[MNIST] Best lambda_:', best_lambda)
+
+    # Visualization
     sm = SoftmaxLearner_reg(lambda_=1)
     m = sm(data)
     plot_mnist_weights(m.theta, 'lambda_1.pdf')
     sm = SoftmaxLearner_reg(lambda_=1e7)
     m = sm(data)
     plot_mnist_weights(m.theta, 'lambda_1e7.pdf')
+    sm = SoftmaxLearner_reg(lambda_=100)
+    m = sm(data)
+    plot_mnist_weights(m.theta, 'lambda_100.pdf')
