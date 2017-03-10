@@ -101,7 +101,7 @@ if __name__ == '__main__':
     data = Orange.data.Table('mnist-1k.tab')
 
     # Parameter optimization (MNIST data)
-    best_lambda = fit_params(SoftmaxLearner_reg, 'lambda_', [0.1, 1, 10, 100], data)
+    best_lambda = fit_params(SoftmaxLearner_reg, 'lambda_', [0.1, 1, 10, 20, 50, 100, 150, 200, 350, 500, 1000, 3000, 5000], data)
     print('[MNIST] Best lambda_:', best_lambda)
 
     # Visualization
@@ -113,4 +113,4 @@ if __name__ == '__main__':
     plot_mnist_weights(m.theta, 'lambda_1e7.pdf')
     sm = SoftmaxLearner_reg(lambda_=100)
     m = sm(data)
-    plot_mnist_weights(m.theta, 'lambda_100.pdf')
+    plot_mnist_weights(m.theta, 'lambda_100.pdf') # identified as best lambda from selection of lambdas in array above
