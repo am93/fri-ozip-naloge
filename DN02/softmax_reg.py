@@ -2,8 +2,25 @@ import numpy as np
 import matplotlib.pyplot as plt
 import Orange
 from math import ceil
+import matplotlib.colors as colors
 
 from softmax import SoftmaxLearner
+
+class MidpointNormalize(colors.Normalize):
+    """
+        I am not the author of this class. Code is freely available as part of example matplotlib usage,
+        accessible here: http://matplotlib.org/users/colormapnorms.html
+        All code of this class belongs to its respectful author.
+    """
+    def __init__(self, vmin=None, vmax=None, midpoint=None, clip=False):
+        self.midpoint = midpoint
+        colors.Normalize.__init__(self, vmin, vmax, clip)
+
+    def __call__(self, value, clip=None):
+        # I'm ignoring masked values and all kinds of edge cases to make a
+        # simple example...
+        x, y = [self.vmin, self.midpoint, self.vmax], [0, 0.5, 1]
+        return np.ma.masked_array(np.interp(value, x, y))
 
 
 class SoftmaxLearner_reg(SoftmaxLearner):
@@ -67,9 +84,10 @@ def plot_mnist_weights(theta, filename='fig.pdf'):
             ax.axis('off')
             continue
         tmp_theta = theta[i][1:].reshape((-1, 28))
-        im = ax.imshow(tmp_theta, interpolation=None, cmap='seismic')
-        fig.colorbar(im, ax=ax)
+        im = ax.imshow(tmp_theta, interpolation=None, cmap='seismic', norm=MidpointNormalize(midpoint=0.))
+        cbar = fig.colorbar(im, ax=ax)
         ax.set_title('class = '+str(i))
+        cbar.ax.tick_params(labelsize=7)
 
     fig.tight_layout(w_pad=1)
     plt.savefig(filename)
