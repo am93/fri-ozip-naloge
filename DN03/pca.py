@@ -70,6 +70,9 @@ def pca_2d(X, eps=1e-5):
     eivec = np.random.rand(X.shape[1], 2)
     eivec = gram_schmidt_orthogonalize(eivec / np.linalg.norm(eivec, axis=0))
     eivec_old = eivec
+    diff_old = 10000
+
+    # covariance matrix
     M = np.cov(X.T)
 
     # repeat until convergence
@@ -78,9 +81,11 @@ def pca_2d(X, eps=1e-5):
         eivec = gram_schmidt_orthogonalize(eivec / np.linalg.norm(eivec, axis=0)) # normalize and ortogonalize
 
         # check for convergence
-        if np.abs(np.linalg.norm(eivec) - np.linalg.norm(eivec_old)) < eps:
+        diff = np.linalg.norm(eivec - eivec_old)
+        if np.abs(diff - diff_old) < eps:
             return np.flip(eivec, axis=1)
         else:
+            diff_old = diff
             eivec_old = eivec
 
 
