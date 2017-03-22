@@ -1,6 +1,9 @@
 from time import time
 import numpy as np
 import Orange
+import matplotlib.pyplot as plt
+from matplotlib import colors as mcolors
+import random
 
 
 def pca_full(X):
@@ -23,7 +26,7 @@ def pca_full(X):
     cov_matrix /= X.shape[0]
 
     # compute eigenvectors from covariance matrix
-    return  np.linalg.eigh(cov_matrix)
+    return np.linalg.eigh(cov_matrix)[1]
 
 
 def gram_schmidt_orthogonalize(vecs):
@@ -37,7 +40,16 @@ def gram_schmidt_orthogonalize(vecs):
     Returns:
         Orthogonalized vectors of the same shape as on input.
     """
-    pass
+    # prepare first vector q in advance
+    Q = (vecs[:, 0] / np.linalg.norm(vecs[:, 0]))[:, None]
+    for j in range(1, vecs.shape[1]):
+        vj = vecs[:, j]
+        for i in range(1, j - 1):
+            rij = (Q[:, i].T.dot(vj)) / (Q[:, i].T.dot(Q[:, i]))
+            vj -= rij * Q[:, i]
+
+        Q = np.column_stack((vj / np.linalg.norm(vj), Q))
+    return Q
 
 
 def pca_2d(X, eps=1e-5):
@@ -54,7 +66,23 @@ def pca_2d(X, eps=1e-5):
             containing the eigenvectors corresponding to the largest and
             the second largest eigenvalues.
     """
-    pass
+    # eigenvector initialization
+    eivec = np.random.rand(X.shape[1], 2)
+    eivec = gram_schmidt_orthogonalize(eivec / np.sum(eivec, axis=0))
+    eivec_old = eivec
+    M = np.cov(X.T)
+
+    # repeat until convergence
+    while(True):
+        eivec = M.dot(eivec)
+        eivec = gram_schmidt_orthogonalize(eivec / np.sum(eivec, axis=0)) # normalize and ortogonalize
+
+        # check for convergence
+        if np.abs(np.linalg.norm(eivec) - np.linalg.norm(eivec_old)) <= eps:
+            return eivec
+        else:
+            eivec_old = eivec
+
 
 
 def project_data(X, vecs):
@@ -68,7 +96,35 @@ def project_data(X, vecs):
     Returns:
         np.ndarray: Projected data of shape [n_examples, k].
     """
-    pass
+    return X.dot(vecs)
+
+def visualize_data(X, Y):
+
+    colors = ['aquamarine', 'yellowgreen', 'chartreuse', 'coral',
+              'cadetblue', 'darkviolet', 'red', 'olive', 'peru',
+              'seagreen', 'navy', 'yellow', 'orange']
+        #list(mcolors.CSS4_COLORS.keys())
+    fig, ax = plt.subplots()
+
+    points = {}
+
+    for y in np.unique(Y):
+        points[y] = [[],[]]
+        for i in range(X.shape[0]):
+            # check if it is current class
+            if y == Y[i]:
+                points[y][0].append(X[i,0])
+                points[y][1].append(X[i,1])
+
+    for y in np.unique(Y):
+        col = random.choice(colors)
+        colors.remove(col)
+        ax.scatter(points[y][0],points[y][1], c=[mcolors.CSS4_COLORS[col]]*(len(points[y][0])), label=y, alpha=0.65)
+
+    ax.legend()
+    ax.grid(True)
+    plt.title('Projekcija podatkov v prostor prvih dveh lastni vektorjev')
+    plt.show()
 
 
 if __name__ == '__main__':
@@ -78,8 +134,10 @@ if __name__ == '__main__':
     vecs_np = pca_full(data.X)
     print('Full time: {:.4f}s'.format(time() - t1))
     transformed_numpy = project_data(data.X, vecs_np[:, :2])
+    visualize_data(transformed_numpy, data.Y)
 
     t1 = time()
     vecs_pow = pca_2d(data.X)
     print('2D time: {:.4f}s'.format(time() - t1))
     transformed_power = project_data(data.X, vecs_pow)
+    visualize_data(transformed_power, data.Y)
