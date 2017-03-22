@@ -37,17 +37,13 @@ def gramschmidt(vecs):
         Q = (vecs[:, 0] / np.linalg.norm(vecs[:, 0]))[:, None]
         for j in range(1, vecs.shape[1]):
             vj = vecs[:, j]
-            for i in range(1, j - 1):
-                rij = (Q[:, i].T.dot(vj)) / (Q[:,i].T.dot(Q[:,i]))
+            for i in range(0, j):
+                rij = (Q[:, i].T.dot(vj))
                 vj -= rij * Q[:, i]
 
             Q = np.column_stack((vj / np.linalg.norm(vj), Q))
 
-        if(np.abs(np.linalg.norm(np.eye(vecs.shape[1])) - np.linalg.norm(Q.T.dot(Q))) < 0.0001):
-            return Q
-        else:
-            print(np.abs(np.linalg.norm(np.eye(vecs.shape[1])) - np.linalg.norm(Q.T.dot(Q))))
-            vecs = Q
+        return Q
 
     return Q
 
@@ -96,10 +92,10 @@ def main():
     np.set_printoptions(formatter={'float': '{:8.2g}'.format}, linewidth=200)
 
     # create special matrix, the so-called Hilbert-matrix Aij = 1 / (i + j + 1)
-    A = np.random.rand(10,2)
-    row_sums = A.sum(axis=1)
-    A = A / row_sums[:, None]
+    A = np.random.rand(10,2) - 0.5
+    print(A)
     Q = gramschmidt(A)
+    print(Q)
 
     # matrix according to theory should be unit matrix:
     I = np.dot(Q.T, Q)

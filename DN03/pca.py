@@ -44,12 +44,16 @@ def gram_schmidt_orthogonalize(vecs):
     Q = (vecs[:, 0] / np.linalg.norm(vecs[:, 0]))[:, None]
     for j in range(1, vecs.shape[1]):
         vj = vecs[:, j]
-        for i in range(1, j - 1):
-            rij = (Q[:, i].T.dot(vj)) / (Q[:, i].T.dot(Q[:, i]))
+        for i in range(0, j):
+            rij = (Q[:, i].T.dot(vj))
             vj -= rij * Q[:, i]
 
         Q = np.column_stack((vj / np.linalg.norm(vj), Q))
     return Q
+
+def gram_schm(vecs):
+    q, r = np.linalg.qr(vecs,'complete')
+    return q
 
 
 def pca_2d(X, eps=1e-5):
@@ -78,11 +82,10 @@ def pca_2d(X, eps=1e-5):
         eivec = gram_schmidt_orthogonalize(eivec / np.sum(eivec, axis=0)) # normalize and ortogonalize
 
         # check for convergence
-        if np.abs(np.linalg.norm(eivec) - np.linalg.norm(eivec_old)) <= eps:
+        if np.abs(np.linalg.norm(eivec) - np.linalg.norm(eivec_old)) < eps:
             return eivec
         else:
             eivec_old = eivec
-
 
 
 def project_data(X, vecs):
@@ -101,9 +104,8 @@ def project_data(X, vecs):
 def visualize_data(X, Y):
 
     colors = ['aquamarine', 'yellowgreen', 'chartreuse', 'coral',
-              'cadetblue', 'darkviolet', 'red', 'olive', 'peru',
-              'seagreen', 'navy', 'yellow', 'orange']
-        #list(mcolors.CSS4_COLORS.keys())
+              'cadetblue', 'darkviolet', 'red', 'olive', 'orchid',
+              'seagreen', 'navy', 'yellow', 'orange','maroon']
     fig, ax = plt.subplots()
 
     points = {}
