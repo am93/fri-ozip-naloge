@@ -25,8 +25,8 @@ def pca_full(X):
         cov_matrix += (row.T - x_avg.T).dot((row + x_avg))
     cov_matrix /= X.shape[0]
 
-    # compute eigenvectors from covariance matrix
-    return np.linalg.eigh(cov_matrix)[1]
+    # compute eigenvectors from covariance matrix (return in descending order)
+    return np.flip(np.linalg.eigh(cov_matrix)[1], axis=1)
 
 
 def gram_schmidt_orthogonalize(vecs):
@@ -51,10 +51,6 @@ def gram_schmidt_orthogonalize(vecs):
         Q = np.column_stack((vj / np.linalg.norm(vj), Q))
     return Q
 
-def gram_schm(vecs):
-    q, r = np.linalg.qr(vecs,'complete')
-    return q
-
 
 def pca_2d(X, eps=1e-5):
     """
@@ -72,14 +68,14 @@ def pca_2d(X, eps=1e-5):
     """
     # eigenvector initialization
     eivec = np.random.rand(X.shape[1], 2)
-    eivec = gram_schmidt_orthogonalize(eivec / np.sum(eivec, axis=0))
+    eivec = gram_schmidt_orthogonalize(eivec / np.linalg.norm(eivec, axis=0))
     eivec_old = eivec
     M = np.cov(X.T)
 
     # repeat until convergence
     while(True):
         eivec = M.dot(eivec)
-        eivec = gram_schmidt_orthogonalize(eivec / np.sum(eivec, axis=0)) # normalize and ortogonalize
+        eivec = gram_schmidt_orthogonalize(eivec / np.linalg.norm(eivec, axis=0)) # normalize and ortogonalize
 
         # check for convergence
         if np.abs(np.linalg.norm(eivec) - np.linalg.norm(eivec_old)) < eps:
@@ -101,7 +97,8 @@ def project_data(X, vecs):
     """
     return X.dot(vecs)
 
-def visualize_data(X, Y):
+
+def visualize_data(X, Y, filename='default.pdf'):
 
     colors = ['aquamarine', 'yellowgreen', 'chartreuse', 'coral',
               'cadetblue', 'darkviolet', 'red', 'olive', 'orchid',
@@ -126,6 +123,7 @@ def visualize_data(X, Y):
     ax.legend()
     ax.grid(True)
     plt.title('Projekcija podatkov v prostor prvih dveh lastni vektorjev')
+    plt.savefig(filename)
     plt.show()
 
 
@@ -136,10 +134,10 @@ if __name__ == '__main__':
     vecs_np = pca_full(data.X)
     print('Full time: {:.4f}s'.format(time() - t1))
     transformed_numpy = project_data(data.X, vecs_np[:, :2])
-    visualize_data(transformed_numpy, data.Y)
+    visualize_data(transformed_numpy, data.Y, 'pca_full.pdf')
 
     t1 = time()
     vecs_pow = pca_2d(data.X)
     print('2D time: {:.4f}s'.format(time() - t1))
     transformed_power = project_data(data.X, vecs_pow)
-    visualize_data(transformed_power, data.Y)
+    visualize_data(transformed_power, data.Y, 'pca_2d.pdf')
