@@ -67,7 +67,7 @@ def pca_2d(X, eps=1e-5):
             the second largest eigenvalues.
     """
     # eigenvector initialization
-    eivec = np.random.rand(X.shape[1], 2)
+    eivec = np.random.rand(X.shape[1], 2) - 0.5
     eivec = gram_schmidt_orthogonalize(eivec / np.linalg.norm(eivec, axis=0))
     eivec_old = eivec
     diff_old = 10000
@@ -83,10 +83,19 @@ def pca_2d(X, eps=1e-5):
         # check for convergence
         diff = np.linalg.norm(eivec - eivec_old)
         if np.abs(diff - diff_old) < eps:
-            return np.flip(eivec, axis=1)
+            break
         else:
             diff_old = diff
             eivec_old = eivec
+
+    # compute eigenvalues
+    lambda1 = np.sum(eivec[:,:1].T.dot(M).dot(eivec[:,:1]))     # np.sum is here just as hack to get scalar
+    lambda2 = np.sum(eivec[:,1:2].T.dot(M).dot(eivec[:,1:2]))   # np.sum is here just as hack to get scalar
+
+    if lambda1 > lambda2:
+        return eivec
+    else:
+        return np.flip(eivec, axis=1)
 
 
 def project_data(X, vecs):
