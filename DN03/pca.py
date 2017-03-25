@@ -5,6 +5,12 @@ import matplotlib.pyplot as plt
 from matplotlib import colors as mcolors
 import random
 
+def py_ang(v1, v2):
+    """ Returns the angle in radians between vectors 'v1' and 'v2'    """
+    cosang = np.dot(v1.T, v2)
+    sinang = np.linalg.norm(v1) * np.linalg.norm(v2)
+    return np.arccos(cosang/sinang)
+
 
 def pca_full(X):
     """
@@ -48,7 +54,7 @@ def gram_schmidt_orthogonalize(vecs):
             rij = (Q[:, i].T.dot(vj))
             vj -= rij * Q[:, i]
 
-        Q = np.column_stack((vj / np.linalg.norm(vj), Q))
+        Q = np.column_stack((Q, vj / np.linalg.norm(vj)))
     return Q
 
 
