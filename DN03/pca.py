@@ -88,7 +88,7 @@ def pca_2d(X, eps=1e-5):
 
         # check for convergence
         diff = np.linalg.norm(eivec - eivec_old)
-        if np.abs(diff - diff_old) < eps:
+        if np.abs(diff) < eps:
             break
         else:
             diff_old = diff
