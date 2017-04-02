@@ -42,7 +42,7 @@ def grad(X, y, P):
             F[i, 1] -= fij * (dy/r)
 
     # compute gradient
-    G = X.t.dot(F)
+    G = -1 * X.t.dot(F)
     return G
 
 
