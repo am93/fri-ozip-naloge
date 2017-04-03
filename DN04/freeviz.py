@@ -3,6 +3,8 @@ from time import time
 import numpy as np
 import matplotlib.pyplot as plt
 from math import pow
+import random
+from matplotlib import colors as mcolors
 
 
 def grad(X, y, P):
@@ -30,6 +32,10 @@ def grad(X, y, P):
             dy = P[i, 1] - P[j, 1]
             r = np.sqrt(pow(dx,2) + pow(dy,2))
 
+            # prevent division by zero
+            if r == 0.0:
+                r = 1e-5
+
             if y[i] == y[j]:
                 fij = -r
             else:
@@ -39,12 +45,11 @@ def grad(X, y, P):
             F[j, 0] -= fij * (dx/r)
 
             F[i, 1] += fij * (dy/r)
-            F[i, 1] -= fij * (dy/r)
+            F[j, 1] -= fij * (dy/r)
 
     # compute gradient
-    G = X.t.dot(F)
+    G = X.T.dot(F)
     return G
-
 
 
 def freeviz(X, y, maxiter=100):
@@ -59,21 +64,65 @@ def freeviz(X, y, maxiter=100):
     Returns:
         np.ndarray: projection matrix A of shape [n_features, 2]
     """
-    pass
+    # initialize random projection matrix A
+    A = np.random.rand(X.shape[1],2) * 2 - 1
 
+    iter = 0
+    convergence = False
 
-def plot( add_required_parameters ):
-    pass
+    # Loop until convergence
+    while iter < maxiter and not convergence:
+        P = X.dot(A)
+        G = grad(X, y, P)
+        #G /= (10 * np.max(abs(G))) # gradient normalization
+        step = np.min(np.linalg.norm(A, axis=1) /
+                      np.linalg.norm(G, axis=1))
+        step = 0.1 * step
+        A -= step * G
+        iter += 1
+        #plot(X,y,A)
+        print('------------------------------------------------> sum(G): ', np.sum(G))
+
+    return A
+
+def plot(X, Y, A):
+
+    P = X.dot(A)
+
+    colors = ['aquamarine', 'yellowgreen', 'chartreuse', 'coral',
+              'cadetblue', 'darkviolet', 'red', 'olive', 'orchid',
+              'seagreen', 'navy', 'yellow', 'orange', 'maroon']
+
+    fig, ax = plt.subplots()
+
+    points = {}
+
+    for y in np.unique(Y):
+        points[y] = [[], []]
+        for i in range(P.shape[0]):
+            # check if it is current class
+            if y == Y[i]:
+                points[y][0].append(P[i, 0])
+                points[y][1].append(P[i, 1])
+
+    for y in np.unique(Y):
+        col = random.choice(colors)
+        colors.remove(col)
+        ax.scatter(points[y][0], points[y][1], c=[mcolors.CSS4_COLORS[col]] * (len(points[y][0])), label=y, alpha=0.65)
+
+    ax.legend()
+    ax.grid(False)
+    plt.show()
 
 
 if __name__ == '__main__':
     import Orange
 
-    data = Orange.data.Table('mnist-1k')
-    data = Orange.preprocess.Normalize()(data)
+    data = Orange.data.Table('small')
+    #data = Orange.preprocess.Normalize()(data)
     X, y = data.X, data.Y
 
     t = time()
     A = freeviz(X, y, maxiter=300)
     print('time', time() - t)
-    plot(...)
+    plot(X,y,A)
