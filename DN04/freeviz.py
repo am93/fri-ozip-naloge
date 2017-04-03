@@ -74,18 +74,18 @@ def freeviz(X, y, maxiter=100):
     while iter < maxiter and not convergence:
         P = X.dot(A)
         G = grad(X, y, P)
-        #G /= (10 * np.max(abs(G))) # gradient normalization
-        step = np.min(np.linalg.norm(A, axis=1) /
-                      np.linalg.norm(G, axis=1))
-        step = 0.1 * step
-        A -= step * G
+        # gradient normalization
+        coeff = np.min(np.linalg.norm(A, axis=1) / np.linalg.norm(G, axis=1))
+        step = 0.1 * coeff
+        A_new = A + step * G
         iter += 1
         #plot(X,y,A)
-        print('------------------------------------------------> sum(G): ', np.sum(G))
+        print('------------------------------------------------> sum(G): ', np.linalg.norm(A - A_new))
+        A = A_new
 
     return A
 
-def plot(X, Y, A):
+def plot(X, Y, A, classname):
 
     P = X.dot(A)
 
@@ -108,7 +108,7 @@ def plot(X, Y, A):
     for y in np.unique(Y):
         col = random.choice(colors)
         colors.remove(col)
-        ax.scatter(points[y][0], points[y][1], c=[mcolors.CSS4_COLORS[col]] * (len(points[y][0])), label=y, alpha=0.65)
+        ax.scatter(points[y][0], points[y][1], c=[mcolors.CSS4_COLORS[col]] * (len(points[y][0])), label=classname[y.astype(int)], alpha=0.65)
 
     ax.legend()
     ax.grid(False)
@@ -118,11 +118,12 @@ def plot(X, Y, A):
 if __name__ == '__main__':
     import Orange
 
-    data = Orange.data.Table('small')
+    data = Orange.data.Table('zoo')
     #data = Orange.preprocess.Normalize()(data)
     X, y = data.X, data.Y
+    classname = data.domain._variables[-1].values
 
     t = time()
     A = freeviz(X, y, maxiter=300)
     print('time', time() - t)
-    plot(X,y,A)
+    plot(X,y,A, classname)
