@@ -65,7 +65,9 @@ def freeviz(X, y, maxiter=100):
         np.ndarray: projection matrix A of shape [n_features, 2]
     """
     # initialize random projection matrix A
-    A = np.random.rand(X.shape[1],2) * 2 - 1
+    A = np.random.rand(X.shape[1],2) * 20 - 10
+
+    global attributes
 
     iter = 0
     convergence = False
@@ -76,7 +78,7 @@ def freeviz(X, y, maxiter=100):
         G = grad(X, y, P)
 
         # gradient normalization
-        coeff = np.min(np.linalg.norm(A, axis=1) / np.linalg.norm(G, axis=1))
+        coeff = np.min(np.linalg.norm(A, axis=1) / (np.linalg.norm(G, axis=1)+1e-7))
         step = 0.1 * coeff
         A_new = A + step * G
 
@@ -88,7 +90,7 @@ def freeviz(X, y, maxiter=100):
         if scale_fac > 0:
             A_new /= scale_fac
 
-        #plot(X,y,A)
+        #plot(X,y,A,attributes=attributes, max_attr=16)
         print('------------------------------------------------> sum(G): ', np.linalg.norm(A - A_new))
         A = A_new
         iter += 1
@@ -108,6 +110,11 @@ def plot(X, Y, A, classnames=None, attributes=None, max_attr=0):
 
     # project points
     P = X.dot(A)
+
+    # scaling
+    scale_fac = np.max(np.linalg.norm(P, axis=1))
+    if scale_fac > 0:
+        P /= scale_fac
 
     colors = ['aquamarine', 'yellowgreen', 'chartreuse', 'coral',
               'cadetblue', 'darkviolet', 'red', 'olive', 'orchid',
@@ -160,6 +167,6 @@ if __name__ == '__main__':
     attributes = [a.name for a in data.domain._variables[:-1]]
 
     t = time()
-    A = freeviz(X, y, maxiter=100)
+    A = freeviz(X, y, maxiter=150)
     print('time', time() - t)
     plot(X,y,A, classnames, attributes, len(attributes))
