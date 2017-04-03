@@ -74,19 +74,39 @@ def freeviz(X, y, maxiter=100):
     while iter < maxiter and not convergence:
         P = X.dot(A)
         G = grad(X, y, P)
+
         # gradient normalization
         coeff = np.min(np.linalg.norm(A, axis=1) / np.linalg.norm(G, axis=1))
         step = 0.1 * coeff
         A_new = A + step * G
-        iter += 1
+
+        # Centering
+        A_new -= np.mean(A_new, axis=0)
+
+        # scaling
+        scale_fac = np.max(np.linalg.norm(A_new, axis=1))
+        if scale_fac > 0:
+            A_new /= scale_fac
+
         #plot(X,y,A)
         print('------------------------------------------------> sum(G): ', np.linalg.norm(A - A_new))
         A = A_new
+        iter += 1
 
     return A
 
-def plot(X, Y, A, classname):
+def plot(X, Y, A, classnames=None, attributes=None, max_attr=0):
+    """
+    Function plots FreeViz data projections and visualizes base vectors
+    :param X: data points [n_examples, n_features]
+    :param Y: class values [n_examples, 1]
+    :param A: projection matrix computed with FreeViz [n_features, 2]
+    :param classnames: string values for class names
+    :param attributes: string values for feature names (base vectors)
+    :param max_attr: maximum number of base vectors to be visualized
+    """
 
+    # project points
     P = X.dot(A)
 
     colors = ['aquamarine', 'yellowgreen', 'chartreuse', 'coral',
@@ -105,13 +125,28 @@ def plot(X, Y, A, classname):
                 points[y][0].append(P[i, 0])
                 points[y][1].append(P[i, 1])
 
+    # plot projections
     for y in np.unique(Y):
         col = random.choice(colors)
         colors.remove(col)
-        ax.scatter(points[y][0], points[y][1], c=[mcolors.CSS4_COLORS[col]] * (len(points[y][0])), label=classname[y.astype(int)], alpha=0.65)
+        # use string class names in labels
+        if classnames is not None:
+            ax.scatter(points[y][0], points[y][1], c=[mcolors.CSS4_COLORS[col]] * (len(points[y][0])),
+                       label=classnames[y.astype(int)], alpha=0.65)
+        else:
+            ax.scatter(points[y][0], points[y][1], c=[mcolors.CSS4_COLORS[col]] * (len(points[y][0])),
+                       label=y.astype(int), alpha=0.65)
+
+    # display base vectors
+    if attributes is not None:
+        for i,a in enumerate(attributes):
+            if i < max_attr:
+                plt.plot([0, A[i,0]], [0,A[i,1]], 'k-')
+                plt.text(A[i,0],A[i,1],a)
 
     ax.legend()
     ax.grid(False)
+    ax.axis('off')
     plt.show()
 
 
@@ -119,11 +154,12 @@ if __name__ == '__main__':
     import Orange
 
     data = Orange.data.Table('zoo')
-    #data = Orange.preprocess.Normalize()(data)
+    data = Orange.preprocess.Normalize()(data)
     X, y = data.X, data.Y
-    classname = data.domain._variables[-1].values
+    classnames = data.domain._variables[-1].values
+    attributes = [a.name for a in data.domain._variables[:-1]]
 
     t = time()
-    A = freeviz(X, y, maxiter=300)
+    A = freeviz(X, y, maxiter=100)
     print('time', time() - t)
-    plot(X,y,A, classname)
+    plot(X,y,A, classnames, attributes, len(attributes))
