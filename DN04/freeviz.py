@@ -80,11 +80,10 @@ def freeviz(X, y, maxiter=100):
 
         # gradient normalization
         coeff = np.min(np.linalg.norm(A, axis=1) / (np.linalg.norm(G, axis=1)+1e-7))
-        step = 0.1 * coeff
-        A_new = A + step * G
+        A_new = A + 0.1 * coeff * G
 
         # Centering
-        A_new -= np.mean(A_new, axis=0)
+        # A_new -= np.mean(A_new, axis=0)
 
         # scaling
         scale_fac = np.max(np.linalg.norm(A_new, axis=1))
@@ -97,9 +96,9 @@ def freeviz(X, y, maxiter=100):
 
         # check convergence
         print('------------------------------------------------> sum(G): ', diff)
-        if diff < 0.005:
+        if diff < 0.001:
             print('Converged at iteration: ', iter)
-            break
+            convergence = True
         else:
             iter += 1
 
@@ -117,12 +116,15 @@ def plot(X, Y, A, classnames=None, attributes=None, max_attr=5):
     :param max_attr: maximum number of base vectors to be visualized
     """
 
-    # project points
-    P = X.dot(A)
 
-    # pick only largest base vectors
-    vecs_idx = [x[0] for x in sorted(enumerate(np.linalg.norm(A, axis=1)), key = lambda x: x[1], reverse=True)][:max_attr]
-    print(vecs_idx)
+    if A is not None:
+        # project points
+        P = X.dot(A)
+
+        # pick only largest base vectors
+        vecs_idx = [x[0] for x in sorted(enumerate(np.linalg.norm(A, axis=1)), key = lambda x: x[1], reverse=True)][:max_attr]
+    else:
+        P = X
 
     # scaling
     scale_fac = np.max(np.linalg.norm(P, axis=1))
@@ -192,7 +194,7 @@ def evaluate_projection(P, y):
 if __name__ == '__main__':
     import Orange
 
-    data = Orange.data.Table('zoo')
+    data = Orange.data.Table('small')
     data = Orange.preprocess.Normalize()(data)
     X, y = data.X, data.Y
     classnames = data.domain._variables[-1].values
