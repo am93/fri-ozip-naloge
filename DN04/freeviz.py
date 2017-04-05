@@ -1,5 +1,6 @@
 from time import time
 
+from sklearn.metrics import silhouette_score
 import numpy as np
 import matplotlib.pyplot as plt
 from math import pow
@@ -91,13 +92,21 @@ def freeviz(X, y, maxiter=100):
             A_new /= scale_fac
 
         #plot(X,y,A,attributes=attributes, max_attr=16)
-        print('------------------------------------------------> sum(G): ', np.linalg.norm(A - A_new))
+        diff = np.linalg.norm(A - A_new)
         A = A_new
-        iter += 1
+
+        # check convergence
+        print('------------------------------------------------> sum(G): ', diff)
+        if diff < 0.005:
+            print('Converged at iteration: ', iter)
+            break
+        else:
+            iter += 1
+
 
     return A
 
-def plot(X, Y, A, classnames=None, attributes=None, max_attr=0):
+def plot(X, Y, A, classnames=None, attributes=None, max_attr=5):
     """
     Function plots FreeViz data projections and visualizes base vectors
     :param X: data points [n_examples, n_features]
@@ -110,6 +119,10 @@ def plot(X, Y, A, classnames=None, attributes=None, max_attr=0):
 
     # project points
     P = X.dot(A)
+
+    # pick only largest base vectors
+    vecs_idx = [x[0] for x in sorted(enumerate(np.linalg.norm(A, axis=1)), key = lambda x: x[1], reverse=True)][:max_attr]
+    print(vecs_idx)
 
     # scaling
     scale_fac = np.max(np.linalg.norm(P, axis=1))
@@ -148,13 +161,32 @@ def plot(X, Y, A, classnames=None, attributes=None, max_attr=0):
     if attributes is not None:
         for i,a in enumerate(attributes):
             if i < max_attr:
-                plt.plot([0, A[i,0]], [0,A[i,1]], 'k-')
-                plt.text(A[i,0],A[i,1],a)
+                idx = vecs_idx[i]
+                plt.plot([0, A[idx,0]], [0,A[idx,1]], 'k-')
+                plt.text(A[idx,0],A[idx,1],a)
 
     ax.legend()
     ax.grid(False)
     ax.axis('off')
     plt.show()
+
+
+def evaluate_projection(P, y):
+    """
+    [BONUS NALOGA]: Funkcija kvantitativno evaluira kvaliteto projekcije na podlagi ideje iz grucenja. Ker zelimo s
+    pomocjo projekcije odkriti podobnosti oz. podobne lastnosti primerov iz istih razredov, bi radi, da se primeri pri
+    projekciji zdruzijo v gruce. Torej, da so primeri istega razreda skupaj na majhni razdalji in hkrati oddaljeni od
+    primerov drugih razredov. Pri grucenju uporabljamo mero silhueta, ki ima vrednosti na intervalu [-1, 1] in ocenjuje
+    ravno to kar smo zapisali zgoraj. Vrednost 1 pomeni, da je primer dobro poziconiran znotraj svoje gruce in dalec od
+    ostalih gruc, medtem ko vrednost -1 kaze ravno nasprotno.
+
+    Rezultat funkcije je povprecna vrednost silhuete za podane projekcije.
+
+    :param P: projected data points [n_examples, 2]
+    :param y: class values [n_examples]
+    :return: mean silhuette value
+    """
+    return silhouette_score(P, y)
 
 
 if __name__ == '__main__':
@@ -167,6 +199,7 @@ if __name__ == '__main__':
     attributes = [a.name for a in data.domain._variables[:-1]]
 
     t = time()
-    A = freeviz(X, y, maxiter=150)
+    A = freeviz(X, y, maxiter=300)
     print('time', time() - t)
-    plot(X,y,A, classnames, attributes, len(attributes))
+    plot(X,y,A, classnames, attributes)
+    print(evaluate_projection(X.dot(A),y))
