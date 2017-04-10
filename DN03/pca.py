@@ -3,6 +3,7 @@ import numpy as np
 import Orange
 import matplotlib.pyplot as plt
 from matplotlib import colors as mcolors
+from sklearn.metrics import silhouette_score
 import random
 
 def py_ang(v1, v2):
@@ -118,7 +119,25 @@ def project_data(X, vecs):
     return X.dot(vecs)
 
 
-def visualize_data(X, Y, filename='default.pdf'):
+def evaluate_projection(P, y):
+    """
+    [BONUS NALOGA]: Funkcija kvantitativno evaluira kvaliteto projekcije na podlagi ideje iz grucenja. Ker zelimo s
+    pomocjo projekcije odkriti podobnosti oz. podobne lastnosti primerov iz istih razredov, bi radi, da se primeri pri
+    projekciji zdruzijo v gruce. Torej, da so primeri istega razreda skupaj na majhni razdalji in hkrati oddaljeni od
+    primerov drugih razredov. Pri grucenju uporabljamo mero silhueta, ki ima vrednosti na intervalu [-1, 1] in ocenjuje
+    ravno to kar smo zapisali zgoraj. Vrednost 1 pomeni, da je primer dobro poziconiran znotraj svoje gruce in dalec od
+    ostalih gruc, medtem ko vrednost -1 kaze ravno nasprotno.
+
+    Rezultat funkcije je povprecna vrednost silhuete za podane projekcije.
+
+    :param P: projected data points [n_examples, 2]
+    :param y: class values [n_examples]
+    :return: mean silhuette value
+    """
+    return silhouette_score(P, y)
+
+
+def visualize_data(X, Y, filename='default.pdf', title=None, classnames=None):
 
     colors = ['aquamarine', 'yellowgreen', 'chartreuse', 'coral',
               'cadetblue', 'darkviolet', 'red', 'olive', 'orchid',
@@ -138,11 +157,15 @@ def visualize_data(X, Y, filename='default.pdf'):
     for y in np.unique(Y):
         col = random.choice(colors)
         colors.remove(col)
-        ax.scatter(points[y][0],points[y][1], c=[mcolors.CSS4_COLORS[col]]*(len(points[y][0])), label=y, alpha=0.65)
+        if classnames is not None:
+            ax.scatter(points[y][0],points[y][1], c=[mcolors.CSS4_COLORS[col]]*(len(points[y][0])), label=classnames[y.astype(int)], alpha=0.65)
+        else:
+            ax.scatter(points[y][0], points[y][1], c=[mcolors.CSS4_COLORS[col]] * (len(points[y][0])), label=y,alpha=0.65)
 
     ax.legend()
     ax.grid(True)
-    plt.title('Projekcija podatkov v prostor prvih dveh lastni vektorjev')
+    if title is not None:
+        plt.title('PCA projekcija podatkov {0} (score:{1:.4g})'.format(title[0],title[1]))
     plt.savefig(filename)
     plt.show()
 
@@ -160,4 +183,6 @@ if __name__ == '__main__':
     vecs_pow = pca_2d(data.X)
     print('2D time: {:.4f}s'.format(time() - t1))
     transformed_power = project_data(data.X, vecs_pow)
-    visualize_data(transformed_power, data.Y, 'pca_2d.pdf')
+    score = evaluate_projection(transformed_power, data.Y)
+    classnames = data.domain._variables[-1].values
+    visualize_data(transformed_power, data.Y, 'pca_2d.pdf', title=('MNIST-1K',score), classnames=classnames)

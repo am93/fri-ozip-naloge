@@ -82,21 +82,17 @@ def freeviz(X, y, maxiter=100):
         coeff = np.min(np.linalg.norm(A, axis=1) / (np.linalg.norm(G, axis=1)+1e-7))
         A_new = A + 0.1 * coeff * G
 
-        # Centering
-        # A_new -= np.mean(A_new, axis=0)
-
         # scaling
         scale_fac = np.max(np.linalg.norm(A_new, axis=1))
         if scale_fac > 0:
             A_new /= scale_fac
 
-        #plot(X,y,A,attributes=attributes, max_attr=16)
         diff = np.linalg.norm(A - A_new)
         A = A_new
 
         # check convergence
-        print('------------------------------------------------> sum(G): ', diff)
-        if diff < 0.001:
+        print('--> sum(G): ', diff)
+        if diff < 0.003:
             print('Converged at iteration: ', iter)
             convergence = True
         else:
@@ -105,7 +101,7 @@ def freeviz(X, y, maxiter=100):
 
     return A
 
-def plot(X, Y, A, classnames=None, attributes=None, max_attr=5):
+def plot(X, Y, A, classnames=None, attributes=None, max_attr=5, title=None):
     """
     Function plots FreeViz data projections and visualizes base vectors
     :param X: data points [n_examples, n_features]
@@ -115,7 +111,6 @@ def plot(X, Y, A, classnames=None, attributes=None, max_attr=5):
     :param attributes: string values for feature names (base vectors)
     :param max_attr: maximum number of base vectors to be visualized
     """
-
 
     if A is not None:
         # project points
@@ -164,12 +159,14 @@ def plot(X, Y, A, classnames=None, attributes=None, max_attr=5):
         for i,a in enumerate(attributes):
             if i < max_attr:
                 idx = vecs_idx[i]
-                plt.plot([0, A[idx,0]], [0,A[idx,1]], 'k-')
-                plt.text(A[idx,0],A[idx,1],a)
+                plt.plot([0, A[idx, 0]], [0, A[idx, 1]], 'k-')
+                plt.text(A[idx, 0], A[idx, 1], a)
 
     ax.legend()
     ax.grid(False)
     ax.axis('off')
+    if title is not None:
+        plt.title('Projekcija podatkov {0} (score:{1:.4g})'.format(title[0],title[1]))
     plt.show()
 
 
@@ -183,6 +180,14 @@ def evaluate_projection(P, y):
     ostalih gruc, medtem ko vrednost -1 kaze ravno nasprotno.
 
     Rezultat funkcije je povprecna vrednost silhuete za podane projekcije.
+    
+    KOMENTAR REZULTATOV: 
+    Ce primerjamo rezultate na podatkih MNIST-1K vidimo, da je FreeViz razbil podatke na mnogo bolj
+    cloveku razmuljive gruce. Pri pristopu PCA se gruce mnogo bolj prekrivajo in niso dobro razvidne, zato je ocena (silhueta)
+    tudi mnogo nižja in celo negativna - to pomeni, da je v povprecju primer blizje primerom iz druge gruce kot gruce 
+    kateri pripada na podlagi razreda.
+    Rezultati na podatkih ZOO so mnogo bolj podobni, podobni sta tudi vrednosti silhuet. Zopet je pristop z uporabo
+    FreeViz dosegel visje rezultate.
 
     :param P: projected data points [n_examples, 2]
     :param y: class values [n_examples]
@@ -194,14 +199,16 @@ def evaluate_projection(P, y):
 if __name__ == '__main__':
     import Orange
 
-    data = Orange.data.Table('small')
+    name = 'zoo'
+    data = Orange.data.Table(name)
     data = Orange.preprocess.Normalize()(data)
     X, y = data.X, data.Y
     classnames = data.domain._variables[-1].values
     attributes = [a.name for a in data.domain._variables[:-1]]
 
     t = time()
-    A = freeviz(X, y, maxiter=300)
+    A = freeviz(X, y, maxiter=850)
     print('time', time() - t)
-    plot(X,y,A, classnames, attributes)
-    print(evaluate_projection(X.dot(A),y))
+    evaluated = evaluate_projection(X.dot(A),y)
+    plot(X,y,A, classnames, attributes, title=(name,evaluated))
+    print('Projection score evaluation: ',evaluated)
