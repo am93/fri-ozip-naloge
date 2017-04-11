@@ -92,7 +92,7 @@ def freeviz(X, y, maxiter=100):
 
         # check convergence
         print('--> sum(G): ', diff)
-        if diff < 0.003 and iter > 400:
+        if diff < 0.003:
             print('Converged at iteration: ', iter)
             convergence = True
         else:
