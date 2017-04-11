@@ -92,7 +92,7 @@ def freeviz(X, y, maxiter=100):
 
         # check convergence
         print('--> sum(G): ', diff)
-        if diff < 0.003:
+        if diff < 0.003 and iter > 400:
             print('Converged at iteration: ', iter)
             convergence = True
         else:
@@ -160,7 +160,7 @@ def plot(X, Y, A, classnames=None, attributes=None, max_attr=5, title=None):
             if i < max_attr:
                 idx = vecs_idx[i]
                 plt.plot([0, A[idx, 0]], [0, A[idx, 1]], 'k-')
-                plt.text(A[idx, 0], A[idx, 1], a)
+                plt.text(A[idx, 0], A[idx, 1], attributes[idx])
 
     ax.legend()
     ax.grid(False)
@@ -199,7 +199,7 @@ def evaluate_projection(P, y):
 if __name__ == '__main__':
     import Orange
 
-    name = 'zoo'
+    name = 'mnist-1k'
     data = Orange.data.Table(name)
     data = Orange.preprocess.Normalize()(data)
     X, y = data.X, data.Y
