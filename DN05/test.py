@@ -1,4 +1,6 @@
 from sklearn.metrics import roc_auc_score
+from roc.py import AUROC, compute_rho
+import random
 
 def do_testing():
     """
@@ -14,3 +16,4 @@ def do_testing():
     print('   AUROC random: ', AUROC(tc, tp))
     print('ROC AUC sklearn: ', roc_auc_score(tc, tp))
     print('   RHO estimate: ', compute_rho(tc, tp))
+

@@ -47,19 +47,23 @@ def AUROC(real, class_prob):
     """
     Function computes area under ROC curve.
     """
-    examples = sorted(zip(real, class_prob), key=lambda x: x[1], reverse=True)
+    examples = sorted(zip(real, class_prob), key=lambda x: (-x[1],-x[0]))
     n_pos = 0
     n_neg = 0
     v_auc = 0
-    last_zero_prob = -1
+    crr_pos, last_pos = 0, -1
     for ex in examples:
         if ex[0] == 1:
             n_pos += 1
-            if ex[1] == last_zero_prob:
-                v_auc += 0.5
+            if last_pos == ex[1]:
+                crr_pos += 1
+            else:
+                last_pos = ex[1]
+                crr_pos = 1
         if ex[0] == 0:
+            if last_pos == ex[1]:
+                v_auc -= 0.5 * crr_pos
             n_neg += 1
-            last_zero_prob = ex[1]
             v_auc += n_pos
 
     return v_auc / (n_pos * n_neg)
