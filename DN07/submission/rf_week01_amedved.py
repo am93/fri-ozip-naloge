@@ -1,8 +1,15 @@
+# My Kaggle username: anzzemedved
+# My score: 0.31763
+
 import numpy as np
 import pandas as pd
-from sklearn.ensemble import RandomForestRegressor
 from datetime import datetime
 import sys, getopt
+import matplotlib.pyplot as plt
+import seaborn as sb
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.ensemble import GradientBoostingRegressor
+from sklearn.neural_network import MLPRegressor
 
 ##########################################################
 # ---- OPTIONS PARSING --------------------------------
@@ -22,21 +29,60 @@ for opt, arg in opts:
     elif opt in ('-v', '--value'):
         ADDITIONAL_VALUE = int(arg)
     elif opt == '-h':
-        print('Available models: randomforest')
+        print('Available models: randomforest, gradientboosting, mlpregressor')
+
+if SELECTED_MODELS == '':
+    print('No models were selected ! Use -h options to display available models...')
 
 ##########################################################
 # ---- DATA ANALYSIS --------------------------------
 ##########################################################
+# read input data using pandas
+df_train = pd.read_csv("../data/train.csv", parse_dates=['timestamp'])
+df_test = pd.read_csv("../data/test.csv", parse_dates=['timestamp'])
+
+print(datetime.now(), ' Data read successfully...')
+
+# get column names
+print(df_train.columns.tolist())
+
+# Price distribution
+plt.figure()
+plt.hist(df_train.price_doc.values/1000, bins=30)
+plt.xlabel('Market price in thousand of rubels')
+plt.ylabel('Number of examples')
+plt.title('Price distribution')
+plt.show()
+
+# Median price based on living area
+grouped_df = df_train.groupby('life_sq')['price_doc'].aggregate(np.median).reset_index()
+plt.figure()
+sb.pointplot(grouped_df.life_sq.values, grouped_df.price_doc.values)
+plt.ylabel('Median Price')
+plt.xlabel('Living area')
+plt.xticks(rotation='vertical')
+plt.title('Plot of median price based on living area')
+plt.show()
+
+# Missing values (based on Kaggle competition snippet)
+missing = df_train.isnull().sum(axis=0).reset_index()
+missing.columns = ['column_name', 'missing_count']
+missing = missing.ix[missing['missing_count']>0]
+missing = missing.sort_values(by=['missing_count'], ascending=True)
+ind = np.arange(missing.shape[0])
+fig, ax = plt.subplots()
+ax.barh(ind, missing.missing_count.values)
+ax.set_yticks(ind)
+ax.set_yticklabels(missing.column_name.values, rotation='horizontal')
+ax.set_xlabel("Number of missing values")
+ax.set_title("Missing values analysis")
+plt.show()
 
 ##########################################################
 # ---- DATA PREPROCESSING --------------------------------
+# DISCLAIMER: Some code from this section was obtained in
+# publicly published scripts on Kaggle competition page
 ##########################################################
-
-# read input data using pandas
-df_train = pd.read_csv("data/train.csv", parse_dates=['timestamp'])
-df_test = pd.read_csv("data/test.csv", parse_dates=['timestamp'])
-
-print(datetime.now(), ' Data read successfully...')
 
 # store train true values and ids for report
 y_train = df_train['price_doc']
@@ -71,8 +117,6 @@ df_all['rel_kitch_sq'] = df_all['kitch_sq'] / df_all['full_sq'].astype(float)
 
 # Remove timestamp column (may overfit the model in train)
 df_all.drop(['timestamp'], axis=1, inplace=True)
-df_all.drop(['market_shop_km'], axis=1, inplace=True)
-df_all.drop(['green_part_5000'], axis=1, inplace=True)
 
 # handle objects - factorize
 df_numeric = df_all.select_dtypes(exclude=['object'])
@@ -99,7 +143,7 @@ X_test = np.float32(np.nan_to_num(X_test))
 y_train = np.float32(y_train)
 
 ##########################################################
-# ---- RANDOM FOREST MODEL -------------------------------
+# ---- MODELS  -------------------------------------------
 ##########################################################
 if 'randomforest' in SELECTED_MODELS:
     num_estimators = ADDITIONAL_VALUE
@@ -116,5 +160,39 @@ if 'randomforest' in SELECTED_MODELS:
     print(datetime.now(), ' Random forest predicitions completed')
 
     df_predictions = pd.DataFrame({'id': id_test, 'price_doc': y_pred})
-    df_predictions.to_csv(str(num_estimators).join(['predictions/rf_basic_','.csv']), index=False)
+    df_predictions.to_csv(str(num_estimators).join(['../predictions/rf_basic_','.csv']), index=False)
 
+
+if 'gradientboosting' in SELECTED_MODELS:
+    num_estimators = ADDITIONAL_VALUE
+
+    print(datetime.now(), ' Gradient boosting model with ', num_estimators, ' estimators will be fitted...')
+
+    gb = GradientBoostingRegressor(n_estimators=num_estimators, loss='lad', max_depth=7)
+    gb.fit(X_train, y_train)
+
+    print(datetime.now(), ' Gradient boosting model fitted...')
+
+    y_pred = gb.predict(X_test)
+
+    print(datetime.now(), ' Gradient boosting predicitions completed')
+
+    df_predictions = pd.DataFrame({'id': id_test, 'price_doc': y_pred})
+    df_predictions.to_csv(str(num_estimators).join(['../predictions/gb_basic_', '.csv']), index=False)
+
+if 'mlpregressor' in SELECTED_MODELS:
+    file_index = ADDITIONAL_VALUE
+
+    print(datetime.now(), ' Multi-layer Perceptron regressor will be fitted...')
+
+    mlp = MLPRegressor(verbose=True)
+    mlp.fit(X_train, y_train)
+
+    print(datetime.now(), ' Multi-layer Perceptron regressor model fitted...')
+
+    y_pred = mlp.predict(X_test)
+
+    print(datetime.now(), ' Multi-layer Perceptron regressor predicitions completed')
+
+    df_predictions = pd.DataFrame({'id': id_test, 'price_doc': y_pred})
+    df_predictions.to_csv(str(file_index).join(['../predictions/mlp_basic_', '.csv']), index=False)
