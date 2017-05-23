@@ -1,44 +1,35 @@
 import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
+from datetime import datetime
 
-# ========================
-# Get the data
-# ========================
-# From here: https://www.kaggle.com/robertoruiz/sberbank-russian-housing-market/dealing-with-multicollinearity/notebook
-macro_cols = ["balance_trade", "balance_trade_growth", "eurrub", "average_provision_of_build_contract",
-"micex_rgbi_tr", "micex_cbi_tr", "deposits_rate", "mortgage_value", "mortgage_rate",
-"income_per_cap", "rent_price_4+room_bus", "museum_visitis_per_100_cap", "apartment_build"]
+##########################################################
+# ---- DATA PREPROCESSING --------------------------------
+##########################################################
 
+# read input data using pandas
 df_train = pd.read_csv("data/train.csv", parse_dates=['timestamp'])
 df_test = pd.read_csv("data/test.csv", parse_dates=['timestamp'])
-df_macro = pd.read_csv("data/macro.csv", parse_dates=['timestamp'], usecols=['timestamp'] + macro_cols)
 
-df_train.head()
+print(datetime.now(), ' Data read successfully...')
 
-# ========================
-# ylog will be log(1+y), as suggested by https://github.com/dmlc/xgboost/issues/446#issuecomment-135555130
-# ========================
-ylog_train_all = np.log1p(df_train['price_doc'].values)
+# store train true values and ids for report
+y_train = df_train['price_doc']
 id_test = df_test['id']
 
+# remove unneeded attributes
 df_train.drop(['id', 'price_doc'], axis=1, inplace=True)
 df_test.drop(['id'], axis=1, inplace=True)
 
-# ========================
-# Build df_all = (df_train+df_test).join(df_macro)
-# ========================
+# concat train and test to simplify data preprocessing
 num_train = len(df_train)
 df_all = pd.concat([df_train, df_test])
-df_all = pd.merge_ordered(df_all, df_macro, on='timestamp', how='left')
-print(df_all.shape)
 
 # Add month-year
 month_year = (df_all.timestamp.dt.month + df_all.timestamp.dt.year * 100)
 month_year_cnt_map = month_year.value_counts().to_dict()
 df_all['month_year_cnt'] = month_year.map(month_year_cnt_map)
 df_all['month_year'] = month_year
-
 
 # Add week-year count
 week_year = (df_all.timestamp.dt.weekofyear + df_all.timestamp.dt.year * 100)
@@ -58,46 +49,42 @@ df_all.drop(['timestamp'], axis=1, inplace=True)
 df_all.drop(['market_shop_km'], axis=1, inplace=True)
 df_all.drop(['green_part_5000'], axis=1, inplace=True)
 
-# new
-#df_all['rate_1'] = df_all['mortgage_rate'] - df_all['deposits_rate']
-
-# ========================
-# Deal with categorical values
-# ========================
+# handle objects - factorize
 df_numeric = df_all.select_dtypes(exclude=['object'])
 df_obj = df_all.select_dtypes(include=['object']).copy()
 
 for c in df_obj:
     df_obj[c] = pd.factorize(df_obj[c])[0]
 
+# handle NAN, INF and > float32 values - sklearn is working internally with float32
 df_values = pd.concat([df_numeric, df_obj], axis=1)
-
 df_values.fillna(0)
+df_values.info()
+df_values = df_values.astype(np.float32)
+df_values.info()
 
-# ========================
-# Convert to numpy values
-# ========================
+print(datetime.now(), ' Data preprocessing finished...')
+
+# get values and split them in train and test back
 X_all = df_values.values
-print(X_all.shape)
-
-# ========================
-# Create a validation set, with last 20% of data
-# ========================
 X_train = X_all[:num_train]
-X_train = np.nan_to_num(X_train)
+X_train = np.float32(np.nan_to_num(X_train))
 X_test = X_all[num_train:]
-X_test = np.nan_to_num(X_test)
+X_test = np.float32(np.nan_to_num(X_test))
+y_train = np.float32(y_train)
 
-df_columns = df_values.columns
+##########################################################
+# ---- RANDOM FOREST -------------------------------------
+##########################################################
+rf = RandomForestRegressor(n_estimators=500, n_jobs=-1)
+rf.fit(X_train, y_train)
 
+print(datetime.now(), ' Random forest model fitted...')
 
-rf = RandomForestRegressor(n_estimators=1000, n_jobs=-1)
-rf.fit(X_train, ylog_train_all)
-ylog_pred = rf.predict(X_test)
+y_pred = rf.predict(X_test)
 
-y_pred = np.exp(ylog_pred) - 1
-y_pred = y_pred * 1.01
+print(datetime.now(), ' Random forest predicitions completed')
 
-df_sub = pd.DataFrame({'id': id_test, 'price_doc': y_pred})
-df_sub.to_csv('rf_sub.csv', index=False)
+df_predictions = pd.DataFrame({'id': id_test, 'price_doc': y_pred})
+df_predictions.to_csv('predictions/rf_basic_500.csv', index=False)
 
