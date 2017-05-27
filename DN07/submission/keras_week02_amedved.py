@@ -165,6 +165,8 @@ if old_model is None:
 	model.add(Dense(1024, activation='relu'))
 	model.add(Dropout(0.1))
 	model.add(Dense(1, init='normal'))
+	model.compile(optimizer='adam',
+              loss='mean_squared_error')
 elif old_model is not None:
 	model = old_model
 
@@ -173,9 +175,6 @@ if new_epochs > 0:
 	epochs = new_epochs
 
 model.summary()
-
-model.compile(optimizer='adam',
-              loss='mean_squared_error')
 
 history = model.fit(X_train, y_train,
                     epochs=epochs,
