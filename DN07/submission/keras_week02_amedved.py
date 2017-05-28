@@ -1,5 +1,5 @@
 # My Kaggle username: anzzemedved
-# My score: 0.31763
+# My score: 0.38015
 import numpy as np
 import pandas as pd
 from datetime import datetime
@@ -21,22 +21,25 @@ old_model = None
 new_epochs = 0
 out_model = None
 pred_num = 42
+model_type = 0
 
 try:
-    opts, args = getopt.getopt(sys.argv[1:], 'm:e:o:n:', ['model=', 'epochs=', 'out_model=', 'num='])
+    opts, args = getopt.getopt(sys.argv[1:], 'm:e:o:n:t:', ['model=', 'epochs=', 'out_model=', 'num=', 'type='])
 except getopt.GetoptError:
     print('Error during options parsing...')
     sys.exit(2)
 
 for opt, arg in opts:
     if opt in ('-m', '--model'):
-        old_model = load_model('../models/'+arg)
+        old_model = load_model('../models/'+arg+'.h5')
     elif opt in ('-e', '--epochs'):
         new_epochs = int(arg)
     elif opt in ('-o', '--out_model'):
     	out_model = '../models/'+arg+'.h5'
     elif opt in ('-n', '--num'):
-    	out_model =  int(arg)
+    	pred_num =  int(arg)
+    elif opt in ('-t', '--type'):
+    	model_type = int(arg)
     script_mode = 1
 
 
@@ -157,12 +160,24 @@ y_train = np.float32(y_train)
 epochs = 500
 
 # check for old model
-if old_model is None:
+if (old_model is None) and model_type == 0:
 	print('No model provided, creating new model...')
 	model = Sequential()
 	model.add(Dense(296, activation='relu', input_shape=(296,)))
 	model.add(Dropout(0.1))
 	model.add(Dense(1024, activation='relu'))
+	model.add(Dropout(0.1))
+	model.add(Dense(1, init='normal'))
+	model.compile(optimizer='adam',
+              loss='mean_squared_error')
+elif (old_model is None) and model_type == 1:
+	print('No model provided, creating new model...')
+	model = Sequential()
+	model.add(Dense(296, activation='relu', input_shape=(296,)))
+	model.add(Dropout(0.1))
+	model.add(Dense(312, activation='relu'))
+	model.add(Dropout(0.1))
+	model.add(Dense(312, activation='relu'))
 	model.add(Dropout(0.1))
 	model.add(Dense(1, init='normal'))
 	model.compile(optimizer='adam',
