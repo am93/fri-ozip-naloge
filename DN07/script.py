@@ -11,9 +11,9 @@ macro_cols = ["balance_trade", "balance_trade_growth", "eurrub", "average_provis
 "micex_rgbi_tr", "micex_cbi_tr", "deposits_rate", "mortgage_value", "mortgage_rate",
 "income_per_cap", "rent_price_4+room_bus", "museum_visitis_per_100_cap", "apartment_build"]
 
-df_train = pd.read_csv("train.csv", parse_dates=['timestamp'])
-df_test = pd.read_csv("test.csv", parse_dates=['timestamp'])
-df_macro = pd.read_csv("macro.csv", parse_dates=['timestamp'], usecols=['timestamp'] + macro_cols)
+df_train = pd.read_csv("data/train.csv", parse_dates=['timestamp'])
+df_test = pd.read_csv("data/test.csv", parse_dates=['timestamp'])
+df_macro = pd.read_csv("data/macro.csv", parse_dates=['timestamp'], usecols=['timestamp'] + macro_cols)
 
 df_train.head()
 
@@ -148,7 +148,7 @@ ylog_pred = model.predict(dtest)
 y_pred = np.exp(ylog_pred) - 1
 
 # increasing all predictions by a ratio
-y_pred = y_pred * 1.01
+y_pred = y_pred * 1.03
 
 df_sub = pd.DataFrame({'id': id_test, 'price_doc': y_pred})
 df_sub.to_csv('sub.csv', index=False)
