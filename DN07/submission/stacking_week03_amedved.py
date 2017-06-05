@@ -1,7 +1,7 @@
 # My Kaggle username: anzzemedved
-# My stacking score:
-# My model averaging score:
-# My best score:
+# My stacking score: 0.32228
+# My model averaging score: 0.33597
+# My best score: 0.31763
 
 #### !!!!!!!!!!!!!!!!!!!!! ####################################################
 # Zaradi tezav pri namestitvi knjiznjice XGBoost sem uporabil
@@ -28,7 +28,8 @@ from sklearn.linear_model import LinearRegression
 ##########################################################
 # ---- PARAMETERS --------------------------------
 ##########################################################
-num_estimators = 1000
+epochs = 100
+num_estimators = 500
 num_fold = 3
 
 ##########################################################
@@ -142,8 +143,6 @@ y_train = np.float32(y_train)
 ##########################################################
 # ---- KERAS  -------------------------------------------
 ##########################################################
-epochs = 150
-
 model = Sequential()
 model.add(Dense(296, activation='relu', input_shape=(296,)))
 model.add(Dense(256, activation='relu'))
@@ -168,6 +167,8 @@ gb = GradientBoostingRegressor(n_estimators=num_estimators, loss='lad', max_dept
 ##########################################################
 # ---- CROSS VALIDATION ----------------------------------
 ##########################################################
+print(datetime.now(), ' Starting cross-validation...')
+
 X_stacking_train = None
 y_stacking_train = None
 
@@ -179,19 +180,22 @@ for train_index, test_index in kf.split(X_train):
     # RF
     rf.fit(tmp_x_train, tmp_y_train)
     rf_preds = rf.predict(tmp_x_test)
+    print(datetime.now(), ' RF cross-validation completed...')
 
     # gradient boosting
     gb.fit(tmp_x_train, tmp_y_train)
     gb_preds = gb.predict(tmp_x_test)
+    print(datetime.now(), ' GB cross-validation completed...')
 
     # NN
     model.fit(tmp_x_train, tmp_y_train,
               epochs=epochs,
               verbose=1)
     nn_preds = model.predict(tmp_x_test, verbose=1)
+    print(datetime.now(), ' NN cross-validation completed...')
 
     # merge results
-    tmp_res = np.hstack(np.hstack((rf_preds, gb_preds)), nn_preds)
+    tmp_res = np.column_stack((np.column_stack((rf_preds, gb_preds)), nn_preds))
 
     # save results
     if X_stacking_train is None:
@@ -199,12 +203,12 @@ for train_index, test_index in kf.split(X_train):
         y_stacking_train = tmp_y_test
     else:
         X_stacking_train = np.vstack((X_stacking_train, tmp_res))
-        y_stacking_train = np.vstack((y_stacking_train, tmp_y_test))
+        y_stacking_train = np.hstack((y_stacking_train, tmp_y_test))
 
 
 ##########################################################
 # ---- TEST predicitions --------------------------------
-##########################################################
+#######################################y_stacking_train = tmp_y_test###################
 rf.fit(X_train, y_train)
 gb.fit(X_train, y_train)
 model.fit(X_train, y_train, epochs=epochs, verbose=1)
@@ -213,7 +217,7 @@ rf_preds = rf.predict(X_test)
 gb_preds = gb.predict(X_test)
 nn_preds = model.predict(X_test)
 
-X_stacking_test = np.hstack(np.hstack((rf_preds, gb_preds)), nn_preds)
+X_stacking_test = np.column_stack((np.column_stack((rf_preds, gb_preds)), nn_preds))
 
 
 ##########################################################
@@ -226,13 +230,13 @@ stacking_preds = lr.predict(X_stacking_test)
 ##########################################################
 # ---- Mean predicition of models ------------------------
 ##########################################################
-avg_preds = X_stacking_test.mean(axis=0)
+avg_preds = X_stacking_test.mean(axis=1)
 
 ##########################################################
 # ---- Save predictions ----------------------------------
 ##########################################################
 stack_predictions = pd.DataFrame({'id': id_test, 'price_doc': stacking_preds.flatten()})
-stack_predictions.to_csv('../predictions/stacking.csv', index=False)
+stack_predictions.to_csv('stacking_pred.csv', index=False)
 
 avg_predictions = pd.DataFrame({'id': id_test, 'price_doc': avg_preds.flatten()})
-avg_predictions.to_csv('../predictions/average.csv', index=False)
+avg_predictions.to_csv('average_pred.csv', index=False)
